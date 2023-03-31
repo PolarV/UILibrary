@@ -1541,6 +1541,7 @@ do
             dropdown.maxvalues = 10
             dropdown.values = {}
             dropdown.selected = properties.multi and {} or ''
+            dropdown.selected_values = {}
 
             for i,v in next, properties.values or {} do
                 dropdown:add_value(v)
@@ -1765,7 +1766,7 @@ do
                         library.flags[dropdown.flag] = dropdown.selected
                     end
                     if dropdown.callback ~= nil then
-                        dropdown.callback(dropdown.selected[value])
+                        dropdown.callback(dropdown.values)
                     end
                     if not dropdown.searching then
                         dropdown:update_text()
