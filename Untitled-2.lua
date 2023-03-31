@@ -6,9 +6,6 @@
     |                                                     |
     \-----------------------------------------------------/
 
-
-    // -- Documentation -- \\
-
     option:set_enabled(enabled <boolean>)
     option:set_text(text <string>)
 
