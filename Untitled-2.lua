@@ -6,9 +6,6 @@
     |                                                     |
     \-----------------------------------------------------/
 
-
-    // -- Documentation -- \\
-
     option:set_enabled(enabled <boolean>)
     option:set_text(text <string>)
 
@@ -1768,7 +1765,7 @@ do
                         library.flags[dropdown.flag] = dropdown.selected
                     end
                     if dropdown.callback ~= nil then
-                        dropdown.callback(dropdown.selected[value])
+                        dropdown.callback(dropdown.selected)
                     end
                     if not dropdown.searching then
                         dropdown:update_text()
@@ -1860,7 +1857,7 @@ do
                                     keybind.indicator:set_enabled(false)
                                 end
                                 keybind.state = false
-                                keybind.callback(keybind.state)
+                                keybind.callback(keybind.state, keybind.bind)
                                 if keybind.flag ~= nil then
                                     flags[keybind.flag] = keybind.state
                                 end
