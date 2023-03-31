@@ -1765,7 +1765,7 @@ do
                         library.flags[dropdown.flag] = dropdown.selected
                     end
                     if dropdown.callback ~= nil then
-                        dropdown.callback(dropdown.selected)
+                        dropdown.callback(dropdown.selected[value])
                     end
                     if not dropdown.searching then
                         dropdown:update_text()
