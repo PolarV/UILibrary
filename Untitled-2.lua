@@ -1670,6 +1670,7 @@ do
 
         function library.meta.options.dropdown:add_value(value)
             table_insert(self.values, value)
+            table_insert(self.selected_values, value)
             if self.multi then
                 self.selected[value] = false
             end
@@ -1678,6 +1679,7 @@ do
 
         function library.meta.options.dropdown:remove_value(value)
             table_remove(self.values, table_find(self.values, value))
+            table_remove(self.selected_values, table_find(self.selected_values), value)
             if self.multi then
                 self.selected[value] = nil
             end
@@ -1766,7 +1768,7 @@ do
                         library.flags[dropdown.flag] = dropdown.selected
                     end
                     if dropdown.callback ~= nil then
-                        dropdown.callback('work')
+                        dropdown.callback(dropdown.selected_values)
                     end
                     if not dropdown.searching then
                         dropdown:update_text()
