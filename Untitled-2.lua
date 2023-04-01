@@ -1537,11 +1537,9 @@ do
         function library.meta.options.dropdown:new(properties)
             local dropdown = library:create('option', properties, self, 'dropdown')
             dropdown.multi = properties.multi or false
-            dropdown.searching = false
             dropdown.maxvalues = 10
             dropdown.values = {}
             dropdown.selected = properties.multi and {} or ''
-            dropdown.selected_values = {}
 
             for i,v in next, properties.values or {} do
                 dropdown:add_value(v)
