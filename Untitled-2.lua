@@ -1766,7 +1766,7 @@ do
                         if dropdown.selected[value] then
                             table_insert(dropdown.selected_values, value)
                         else
-                            table_remove(dropdown.selected_values, GetIndex(dropdown.selected[value]), value)
+                            table_remove(dropdown.selected_values, 1, value)
                         end
                         objects.label.Theme = {['Color'] = dropdown.selected[value] and 'Option Text 1' or 'Option Text 2'}
                         objects.container.Transparency = dropdown.selected[value] and 0.15 or 0
