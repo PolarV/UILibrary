@@ -1749,6 +1749,16 @@ do
                 library.dropdown.objects.background.Size = udim2_new(1,-4,0,index * 16 + 3)
 
                 index = index + 1
+
+                function GetIndex(Table, Value)
+                    for i, v in pairs(Table) do
+                        if v == Value then
+                            return i;
+                        end
+                    end
+                
+                    return -1;
+                end
         
                 library:connection(objects.container.MouseButton1Down, function()
                     if dropdown.multi then
@@ -1756,7 +1766,7 @@ do
                         if dropdown.selected[value] then
                             table_insert(dropdown.selected_values, value)
                         else
-                            table_remove(dropdown.selected_values, table_find(dropdown.selected_values), value)
+                            table_remove(dropdown.selected_values, GetIndex(dropdown.selected[value]), value)
                         end
                         objects.label.Theme = {['Color'] = dropdown.selected[value] and 'Option Text 1' or 'Option Text 2'}
                         objects.container.Transparency = dropdown.selected[value] and 0.15 or 0
