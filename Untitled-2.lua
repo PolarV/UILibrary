@@ -1537,7 +1537,7 @@ do
         function library.meta.options.dropdown:new(properties)
             local dropdown = library:create('option', properties, self, 'dropdown')
             dropdown.multi = properties.multi or false
-            dropdown.maxvalues = 10
+            dropdown.maxvalues = 30
             dropdown.values = {}
             dropdown.selected = properties.multi and {} or ''
 
