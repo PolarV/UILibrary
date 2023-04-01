@@ -1754,9 +1754,9 @@ do
                     if dropdown.multi then
                         dropdown.selected[value] = not dropdown.selected[value]
                         if dropdown.selected[value] then
-                            table_insert(self.selected_values, value)
+                            table_insert(dropdown.selected_values, value)
                         else
-                            table_remove(self.selected_values, table_find(self.selected_values), value)
+                            table_remove(dropdown.selected_values, table_find(dropdown.selected_values), value)
                         end
                         objects.label.Theme = {['Color'] = dropdown.selected[value] and 'Option Text 1' or 'Option Text 2'}
                         objects.container.Transparency = dropdown.selected[value] and 0.15 or 0
