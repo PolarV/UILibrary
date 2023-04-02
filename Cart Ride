@@ -1,1 +1,1138 @@
+--//Settings
 
+-- Mana Fly
+FlySettings = {}
+FlySettings.ToggleKey = Enum.KeyCode.LeftAlt;
+FlySettings.FlyToggle = false;
+FlySettings.FlySpeed = 15;
+FlySettings.SprintSpeed = 70;
+
+-- Walkspeed Boost
+WSSettings = {};
+WSSettings.ON = false;
+WSSettings.SpeedBoost = 0.5;
+
+-- Nofall
+local NFSettings = {};
+NFSettings.ON = false;
+
+-- Autopick up
+local APSettings = {};
+APSettings.ON = false;
+
+-- Autofarm
+local AFSettings = {};
+AFSettings.ON = false;
+
+-- No Killbricks
+local NoKBSettings = {};
+NoKBSettings.ON = false;
+
+--//Services
+local HttpService = game:GetService'HttpService';
+
+if _G.Connections ~= nil then
+	for _, Connection in pairs(_G.Connections) do
+		if Connection then
+			Connection:Disconnect();
+		end
+	end
+end
+
+if _G.Instances ~= nil then
+for _, v in pairs(_G.Instances) do
+    if v then
+        v:Destroy();
+    end
+end
+end
+
+_G.Whitelisted = {}
+_G.Connections = {};
+_G.Instances = {};
+
+local Player = game.Players.LocalPlayer;
+
+function loadSettings()
+	if isfile('ESP_Settings.json') then
+		_G.Whitelisted = HttpService:JSONDecode(readfile('ESP_Settings.json'));
+	end
+end
+
+function saveSettings()
+	local savedTable = HttpService:JSONEncode(_G.Whitelisted);
+
+	writefile('ESP_Settings.json', savedTable);
+end
+
+loadSettings();
+
+local Con;
+
+Con = Player.Chatted:Connect(function(Msg)
+	if Msg:sub(1, 10):lower() == '/e friend ' then
+		local String = Msg:sub(11, #Msg);
+
+		local Target;
+		for _, Plr in pairs(game.Players:GetPlayers()) do
+			if Plr ~= Player and Plr.Name:lower():sub(1, #String) == String:lower() then
+				Target = Plr;
+			end
+		end
+
+		if Target then
+			_G.Whitelisted[Target.Name] = true;
+		end
+
+		saveSettings();
+		
+	end
+
+	if Msg:sub(1, 12):lower() == '/e unfriend ' then
+		local String = Msg:sub(13, #Msg);
+
+		local Target;
+		for _, Plr in pairs(game.Players:GetPlayers()) do
+			if Plr ~= Player and Plr.Name:lower():sub(1, #String) == String:lower() then
+				Target = Plr;
+			end
+		end
+
+		if Target then
+			_G.Whitelisted[Target.Name] = nil;
+		end
+
+		saveSettings();
+		
+	end
+end)
+
+table.insert(_G.Connections, Con);
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/PolarV/ESP/main/ESP'))()
+
+--//Services
+local TweenService = game:GetService'TweenService';
+local RunService = game:GetService'RunService';
+local UIS = game:GetService'UserInputService';
+local VIM = game:GetService'VirtualInputManager';
+
+--//Variables
+local Player = game.Players.LocalPlayer;
+local Mouse = Player:GetMouse();
+local Camera = workspace.CurrentCamera;
+
+--//Tables
+local Labels = {};
+
+--//Booleans
+local Spectating;
+
+--//Functions
+function GetPlayer(Label)
+    
+    local Plr;
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v:FindFirstChild'leaderstats' then
+            local String = v.FirstName.Value .. ' ' .. v.LastName.Value
+            Plr = v;
+            break
+        end
+    end
+
+    return Plr;
+end
+
+function CharCheck(Char)
+    if Char and Char:FindFirstChild'HumanoidRootPart' and Char:FindFirstChild'Humanoid' then
+        return true
+    end
+    return false
+end
+
+local function inRange(pos1,pos2,range)
+	-- Math to see if pos1 is within the given range at pos2 on the x and y axis
+	local inXRange = (pos1.X >= pos2.X) and (pos1.X <= pos2.X + range.X)
+	local inYRange = (pos1.Y >= pos2.Y) and (pos1.Y <= pos2.Y + range.Y)
+
+	return inXRange,inYRange
+end
+
+local function formatPlayerName(playerName, title, rank, role, gender, level)
+	if not workspace:FindFirstChild("IsPriv") then
+		local formattedRole = ""
+		if role == "Owner" then
+			local genderedRolePrefix
+			if gender == "Female" then
+				genderedRolePrefix = "Lady"
+			else
+				genderedRolePrefix = "Lord"
+			end
+
+			formattedRole = genderedRolePrefix
+
+			if playerName == "Ratriel" then
+				formattedRole = "Pontiff"
+			end	
+		end
+
+		local nameParts = {}
+
+		if formattedRole ~= "" then 
+			table.insert(nameParts, formattedRole) 
+		end
+
+		if playerName ~= "" and playerName ~= " " then 
+			table.insert(nameParts, playerName) 
+		end
+
+		if rank ~= "" then 
+			table.insert(nameParts, rank) 
+		end
+
+		local formattedNameAndRankAndTitle= table.concat(nameParts," ")
+
+		local levelPaddingLength= 0
+
+		if level > 0 then 
+			levelPaddingLength= 3 + string.len(tostring(level)) * 3 
+		end
+
+		local paddedFormattedNameAndRankAndTitle= levelPaddingLength > 0 and string.rep(" ",levelPaddingLength)..formattedNameAndRankAndTitle or formattedNameAndRankAndTitle
+
+		if title ~= "" then paddedFormattedNameAndRankAndTitle= paddedFormattedNameAndRankAndTitle..", "..title end
+
+		return paddedFormattedNameAndRankAndTitle
+
+	else
+		if playerName ~= "" and playerName ~= " " then return " "..playerName end
+	end
+
+end
+
+function UpdatePlayers()
+for _, b in pairs(game.Players:GetPlayers()) do
+    if b:FindFirstChild'leaderstats' then
+
+	local leaderstats = b:WaitForChild("leaderstats")
+
+	local firstNameValue = leaderstats:WaitForChild("FirstName")
+
+	local uberTitleValue = leaderstats:WaitForChild("UberTitle")
+
+	local lastNameValue = leaderstats:WaitForChild("LastName")
+
+	local houseRankValue = leaderstats:WaitForChild("HouseRank")
+
+	local genderValue = leaderstats:WaitForChild("Gender")
+
+	local hiddenValue = leaderstats:WaitForChild("Hidden")
+
+	local prestigeValue=leaderstats:WaitForChild("Prestige")
+
+	local maxEdictValue = leaderstats:WaitForChild("MaxEdict")
+
+    for _, v in pairs(Player.PlayerGui.LeaderboardGui.MainFrame.ScrollingFrame:GetChildren()) do
+        if v.Text == formatPlayerName(firstNameValue.Value,uberTitleValue.Value,lastNameValue.Value,houseRankValue.Value,genderValue.Value,prestigeValue.Value) then
+            v.Name = b.Name;
+
+            if not v:GetAttribute'PlayerName' then
+                v:SetAttribute('PlayerName', b.Name);
+            end
+
+            if not v:GetAttribute'OldColor' then
+                v:SetAttribute('OldColor', v.TextColor3);
+            end
+            Labels[v] = v;
+        end
+    end
+    end
+end
+end
+
+function Spectate(Label)
+    local Plr = game.Players:FindFirstChild(Label:GetAttribute'PlayerName');
+    if CharCheck(Plr.Character) then
+        Camera.CameraSubject = Plr.Character.Humanoid;
+        Label.TextColor3 = Color3.fromRGB(255, 0, 0);
+    else
+        Unspectate();
+    end
+end
+
+function Unspectate()
+    if CharCheck(Player.Character) then
+        Camera.CameraSubject = Player.Character.Humanoid;
+    end
+end
+
+for _, Plr in pairs(game.Players:GetPlayers()) do
+    UpdatePlayers();
+    Plr.CharacterAdded:Connect(function()
+        UpdatePlayers();
+    end)
+end
+
+game.Players.PlayerAdded:Connect(function(ePlayer)
+    UpdatePlayers();
+    ePlayer.CharacterAdded:Connect(function()
+        UpdatePlayers();
+    end)
+end)
+
+local OldLabel = nil;
+
+UIS.InputEnded:Connect(function(Key)
+    if Key.UserInputType == Enum.UserInputType.MouseButton1 then
+        for _, Label in pairs(Labels) do
+            local InXRange, InYRange = inRange(Vector2.new(Mouse.X, Mouse.Y), Label.AbsolutePosition, Label.AbsoluteSize)
+            if InXRange and InYRange then
+
+                -- Unspectate
+                if Label.TextColor3 == Color3.fromRGB(255, 0, 0) or Label:GetAttribute'PlayerName' == Player.Name then
+                    Unspectate();
+                    Label.TextColor3 = Label:GetAttribute'OldColor';
+                    if OldLabel ~= nil and OldLabel ~= Label then
+                        OldLabel.TextColor3 = OldLabel:GetAttribute'OldColor';
+                    end
+                    UpdatePlayers();
+                    return
+                end
+                Spectate(Label)
+
+                if OldLabel ~= nil and OldLabel ~= Label then
+                    OldLabel.TextColor3 = OldLabel:GetAttribute'OldColor';
+                end
+                
+                OldLabel = Label;
+                
+                UpdatePlayers();
+                
+            else
+                
+            end
+        end
+    end
+end)
+
+-- ROGUE LINEAGE BUILD A BOAT MOD DETECTOR
+
+local UIS = game:GetService'UserInputService';
+local Player = game.Players.LocalPlayer;
+
+function Notify(Text)
+    local Function = Instance.new("BindableFunction")
+Function.OnInvoke = CallBack
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+Title = Text,
+Text = "",
+Icon = "",
+Duration = 30,
+Callback = Function;
+})
+end
+
+local Mods = {};
+
+for _, ePlayer in pairs(game.Players:GetPlayers()) do
+    if ePlayer == nil then continue end
+    if ePlayer:IsInGroup(17262561) then
+        print'CHECKED';
+    if ePlayer:GetRankInGroup(17262561) == 3 or ePlayer:GetRankInGroup(17262561) == 4 or ePlayer:GetRankInGroup(17262561) == 5 or ePlayer:GetRankInGroup(17262561) == 6 or ePlayer:GetRankInGroup(17262561) == 255 or ePlayer:GetRankInGroup(17262561) == 255 then
+        Notify('Mod In Server: ' .. ePlayer.Name);
+        local Sound = Instance.new('Sound');
+        Sound.Parent = Player.PlayerGui;
+        Sound.SoundId = 'rbxassetid://2514375878';
+        Sound.Volume = 1.5;
+        Sound:Play();
+        Mods[ePlayer.UserId] = true;
+    end
+end
+end
+
+game.Players.PlayerAdded:Connect(function(ePlayer)
+    task.wait();
+    if ePlayer:IsInGroup(17262561) then
+    if ePlayer:GetRankInGroup(17262561) == 3 or ePlayer:GetRankInGroup(17262561) == 4 or ePlayer:GetRankInGroup(17262561) == 5 or ePlayer:GetRankInGroup(17262561) == 6 or ePlayer:GetRankInGroup(17262561) == 255 or ePlayer:GetRankInGroup(17262561) == 255 then
+        Notify('Mod In Server: ' .. ePlayer.Name);
+        local Sound = Instance.new('Sound');
+        Sound.Parent = Player.PlayerGui;
+        Sound.SoundId = 'rbxassetid://2514375878';
+        Sound.Volume = 1.5;
+        Sound:Play();
+        Mods[ePlayer.UserId] = true;
+    end
+end
+end)
+
+game.Players.PlayerRemoving:Connect(function(ePlayer)
+    if Mods[ePlayer.UserId] ~= nil then
+        Notify('Mod Left The Server: ' .. ePlayer.Name);
+        local Sound = Instance.new('Sound');
+        Sound.Parent = Player.PlayerGui;
+        Sound.SoundId = 'rbxassetid://371274037';
+        Sound.Volume = 1.5;
+        Sound:Play();
+        Mods[ePlayer.UserId] = nil;
+    end
+end)
+
+Player.Chatted:Connect(function(Msg)
+    if Msg:lower() == '/e modlist' then
+        local Count = 0;
+        for _, ePlayer in pairs(game.Players:GetPlayers()) do
+            if ePlayer:IsInGroup(17262561) then
+                print'CHECKED';
+            if ePlayer:GetRankInGroup(17262561) == 3 or ePlayer:GetRankInGroup(17262561) == 4 or ePlayer:GetRankInGroup(17262561) == 5 or ePlayer:GetRankInGroup(17262561) == 6 or ePlayer:GetRankInGroup(17262561) == 254 or ePlayer:GetRankInGroup(17262561) == 255 then
+                Count = Count + 1;
+            end
+        end
+        end
+        Notify('Mods In Server: ' .. Count);
+    end
+end)
+
+
+--//Services
+local TweenService = game:GetService'TweenService';
+local RunService = game:GetService'RunService';
+local UIS = game:GetService'UserInputService';
+local VIM = game:GetService'VirtualInputManager';
+
+--//Variables
+local Player = game.Players.LocalPlayer;
+local Character = Player.Character;
+
+--//Script functions
+
+function ManaFly()
+    local Settings = {
+	
+        Speed = FlySettings.FlySpeed,
+        SprintSpeed = FlySettings.SprintSpeed,
+        ToggleKey = FlySettings.ToggleKey,
+        SprintKey = Enum.KeyCode.LeftControl,
+        
+        ForwardKey = Enum.KeyCode.W,
+        LeftKey = Enum.KeyCode.A,
+        BackwardKey = Enum.KeyCode.S,
+        RightKey = Enum.KeyCode.D,
+        UpKey = Enum.KeyCode.E,
+        DownKey = Enum.KeyCode.Q,
+        
+    }
+    
+    local Screen = Instance.new("ScreenGui",game.CoreGui)
+    local Distance = Instance.new("TextLabel",Screen)
+    Distance.BackgroundTransparency = 1
+    Distance.Size = UDim2.new(0,10,0,10)
+    Distance.ZIndex = 2
+    Distance.Text = "0"
+    Distance.TextStrokeTransparency = .5
+    Distance.TextSize = 20
+    Distance.TextStrokeColor3 = Color3.fromRGB(33, 33, 33)
+    Distance.Font = Enum.Font.Gotham
+    Distance.TextColor3 = Color3.new(1,1,1)
+    Distance.TextXAlignment = Enum.TextXAlignment.Left
+    Distance.TextYAlignment = Enum.TextYAlignment.Top
+    
+    
+    local Mouse = game.Players.LocalPlayer:GetMouse()
+    local Direction = Vector3.new(0,0,0)
+    local InterpolatedDir = Direction
+    local Tilt = 0
+    local InterpolatedTilt = Tilt
+    local RunService = game:GetService("RunService")
+    local Sprinting = false
+    local CameraPos = game.Workspace.CurrentCamera.CFrame.Position
+    
+    function Lerp(a, b, t)
+        return a + (b - a) * t
+    end
+    
+    local LastPos = nil
+    
+    function KeyHandler(actionName, userInputState)
+        if true and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if actionName == "Toggle" and userInputState == Enum.UserInputState.Begin then
+                if FlySettings.FlyToggle then
+                    LastPos = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = false
+                    --game.Players.LocalPlayer.Character.Humanoid.PlatformStand = true
+                else
+                    LastPos = nil
+                    game.Players.LocalPlayer.Character.Humanoid.PlatformStand = false
+                    --game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = false
+                end
+            elseif actionName == "Forward" then
+                Tilt = userInputState == Enum.UserInputState.Begin and -20 or 0
+                Direction = Vector3.new(Direction.x,Direction.y,userInputState == Enum.UserInputState.Begin and -1 or 0)
+            elseif actionName == "Left" then
+                Direction = Vector3.new(userInputState == Enum.UserInputState.Begin and -1 or 0,Direction.y,Direction.z)
+            elseif actionName == "Backward" then
+                Tilt = userInputState == Enum.UserInputState.Begin and 20 or 0
+                Direction = Vector3.new(Direction.x,Direction.y,userInputState == Enum.UserInputState.Begin and 1 or 0)
+            elseif actionName == "Right" then
+                Direction = Vector3.new(userInputState == Enum.UserInputState.Begin and 1 or 0,Direction.y,Direction.z)
+            elseif actionName == "Up" then
+                Direction = Vector3.new(Direction.x,userInputState == Enum.UserInputState.Begin and 1 or 0,Direction.z)
+            elseif actionName == "Down" then
+                Direction = Vector3.new(Direction.x,userInputState == Enum.UserInputState.Begin and -1 or 0,Direction.z)
+            elseif actionName == "Sprint" then
+                Sprinting = userInputState == Enum.UserInputState.Begin
+            end
+        end
+    end
+    
+    
+    
+    game:GetService("UserInputService").InputBegan:connect(function(inputObject, gameProcessedEvent)
+        
+        if inputObject.KeyCode == Settings.ToggleKey then
+            KeyHandler("Toggle", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.ForwardKey then
+            KeyHandler("Forward", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.LeftKey then
+            KeyHandler("Left", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.BackwardKey then
+            KeyHandler("Backward", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.RightKey then
+            KeyHandler("Right", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.UpKey then	
+            KeyHandler("Up", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.DownKey then
+            KeyHandler("Down", Enum.UserInputState.Begin, inputObject)
+        elseif inputObject.KeyCode == Settings.SprintKey then
+            KeyHandler("Sprint", Enum.UserInputState.Begin, inputObject)
+        end
+        
+        
+    end)
+    
+    
+    game:GetService("UserInputService").InputEnded:connect(function(inputObject, gameProcessedEvent)
+        
+        if inputObject.KeyCode == Settings.ToggleKey then
+            KeyHandler("Toggle", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.ForwardKey then
+            KeyHandler("Forward", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.LeftKey then
+            KeyHandler("Left", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.BackwardKey then
+            KeyHandler("Backward", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.RightKey then
+            KeyHandler("Right", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.UpKey then	
+            KeyHandler("Up", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.DownKey then
+            KeyHandler("Down", Enum.UserInputState.End, inputObject)
+        elseif inputObject.KeyCode == Settings.SprintKey then
+            KeyHandler("Sprint", Enum.UserInputState.End, inputObject)
+        end
+        
+        
+    end)
+    
+    local PartIgnore = {};
+    local stop = false
+    
+    function GetIndex(Table, Value)
+        for i, v in pairs(Table) do
+            if v == Value then
+                return i;
+            end
+        end
+    
+        return -1;
+    end
+    
+    function DisableClip(Part)
+        if Part and Part.Parent and Part:IsA'BasePart' and Part.CanCollide then
+            local Start = tick();
+            local OldTransparency = Part.Transparency;
+            
+            table.insert(PartIgnore, Part);
+    
+            while game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild'HumanoidRootPart' do
+                -- if tick() - Start > 1 and not IsInZone(player.Character.HumanoidRootPart, Part, true) and not IsInZone({Position = camera.CFrame.p}, Part, true) then
+                    -- break;
+                -- end
+                
+                if stop == true then break end
+    
+                Part.CanCollide = false;
+                -- if not gay then Part.Transparency = 0.75; end
+                Part.Transparency = 0.75;
+    
+                wait(1 / 8);
+            end
+    
+            table.remove(PartIgnore, GetIndex(PartIgnore, Part));
+    
+            Part.Transparency = OldTransparency;
+            Part.CanCollide = true;
+        end
+    end
+         
+    RunService.RenderStepped:Connect(function()
+        if FlySettings.FlyToggle and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")  then
+            for i,v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Velocity = Vector3.new(0,0,0)
+                end
+            end
+            Screen.Enabled = true
+            local RootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
+            if LastPos then
+                Distance.Text = math.floor((LastPos-RootPart.Position).Magnitude+.5)
+                if (LastPos-RootPart.Position).Magnitude >= 350 then
+                    Distance.TextColor3 = Color3.new(1,0,0)
+                else
+                    Distance.TextColor3 = Color3.new(1,1,1)	
+                end
+                local start = game.Players.LocalPlayer:GetMouse().Hit.p;
+                local dir = (start - game.Workspace.CurrentCamera.CFrame.p);
+                local ray = Ray.new(game.Players.LocalPlayer.Character.HumanoidRootPart.Position, dir.unit * 50);
+                local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, {game.Players.LocalPlayer.Character, camera, unpack(PartIgnore)});
+                    spawn(function() DisableClip(hit); end);
+                    stop = false
+            else
+                Distance.TextColor3 = Color3.new(1,1,1)
+                Distance.Text = 0
+           stop = true
+            end
+            InterpolatedDir = InterpolatedDir:Lerp((Direction * (Sprinting and FlySettings.SprintSpeed or FlySettings.FlySpeed)),.2)
+            InterpolatedTilt = Lerp(InterpolatedTilt ,Tilt* (Sprinting and 2 or 1),Tilt == 0 and .2 or .1)
+            RootPart.CFrame = RootPart.CFrame:Lerp(CFrame.new(RootPart.Position,RootPart.Position + Mouse.UnitRay.Direction) * CFrame.Angles(0,math.rad(00),0) * CFrame.new(InterpolatedDir)  * CFrame.Angles(math.rad(InterpolatedTilt),0,0),.2)
+        else
+            Distance.TextColor3 = Color3.new(1,1,1)
+            Distance.Text = 0
+            Screen.Enabled = false
+            stop = true
+        end
+    end)
+end
+
+ManaFly();
+
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/PolarV/UILibrary/main/Untitled-2.lua"))({cheatname = 'cheat name', gamename = "game name"})   
+
+    local menu = library:create('menu', {})
+    library.menu = menu
+
+    library:create_settings_tab(menu)
+
+    -- tab
+    local properties = {text = 'Rogue Lineage', order = 1}
+    local tab = menu:tab(properties)
+
+    -- section
+    local properties = {text = 'General', size = 4}
+    local section = tab:section(properties)
+
+    -- toggle
+    local properties = {
+        default = true, text = 'Mana Fly', order = 1, enabled = true, flag = 'manafly',
+        callback = function(State) FlySettings.FlyToggle = State end}
+
+    local toggle = section:toggle(properties)
+
+    local keybindproperties = {
+        mode = 'toggle',
+        text = 'Fly Keybind',
+        order = 1,
+        enabled = true,
+        flag = 'flykey',
+        indicator = toggle,
+        callback = function(State, Key) toggle:set_state(State) FlySettings.FlyToggle = State FlySettings.ToggleKey = Key end
+    }
+    toggle:keybind(keybindproperties)
+
+    local sliderproperties = {
+        default = 15, min = 0, max = 30, increment = 1, flag = 'flyspeedslider', text = 'Boost', order = 1, enabled = true, 
+        callback = function(number) FlySettings.FlySpeed = number end}
+
+     toggle:slider(sliderproperties)
+
+     -- toggle
+     local properties = {default = false, flag = 'wsboost', text = 'WalkSpeed Boost', order = 3, enabled = true, 
+     callback = function(State) WSSettings.ON = State
+        for _, v in pairs(Player.Character:WaitForChild'Boosts':GetChildren()) do
+            if v.Name == 'SpeedBoost' and v:GetAttribute'Speed' then
+                if State then
+                    v.Value = WSSettings.SpeedBoost;
+                else
+                    v.Value = 0;
+                end
+            end
+    end
+    end}
+     local toggle = section:toggle(properties)
+     
+     local sliderproperties = {
+        default = 0.5, min = 0, max = 70, increment = 0.1, flag = 'wsboostslider', text = 'Boost', order = 1, enabled = true, 
+        callback = function(number) WSSettings.SpeedBoost = number
+                for _, v in pairs(Player.Character:WaitForChild'Boosts':GetChildren()) do
+                    if v.Name == 'SpeedBoost' and v:GetAttribute'Speed' then
+                        if WSSettings.ON then
+                            v.Value = WSSettings.SpeedBoost;
+                        else
+                            v.Value = 0;
+                        end
+                    end
+                end
+        end}
+
+     toggle:slider(sliderproperties)
+
+      -- toggle
+    local properties = {
+        default = true, text = 'Nofall', order = 1, enabled = true, flag = 'nofall',
+        callback = function(State) if State == true then
+             Player.Character.CharacterHandler.Remotes.ApplyFallDamage.Name = 'No'
+             else
+                local Remote = Player.Character.CharacterHandler.Remotes:FindFirstChild'No' or Player.Character.CharacterHandler.Remotes:FindFirstChild'ApplyFallDamage';
+                Remote.Name = 'ApplyFallDamage'
+             end
+        end}
+
+    local toggle = section:toggle(properties)
+     
+     local seperatorproperties = {}
+     seperatorproperties.text = ''
+     seperatorproperties.order = 1
+     seperatorproperties.enabled = true 
+     local separator = section:separator(seperatorproperties)
+     
+     local dropdownproperties = {};
+     dropdownproperties.multi = true;
+     dropdownproperties.text = 'ESP Friends';
+     dropdownproperties.flag = 'dropdownproperties';
+     dropdownproperties.selected_values = {};
+     dropdownproperties.searching = true;
+
+     function addToDropdown(Player, Add)
+        if _G.Whitelisted[Player] == nil then
+        _G.Whitelisted[Player] = true;
+        end
+     end
+     
+     dropdownproperties.callback = function(State) 
+        for i,v in pairs(State) do
+            if v == false then
+                _G.Whitelisted[i] = nil;
+            else
+                _G.Whitelisted[i] = true;
+            end
+        end
+        
+        saveSettings();
+    end
+     
+     local dropdown = section:dropdown(dropdownproperties)
+     local dropdownPlayers = {};
+     
+     local function updateDropdown()
+        for i,v in pairs(game.Players:GetPlayers()) do
+            if v ~= game.Players.LocalPlayer then
+                dropdown:add_value(v.Name);
+                dropdownPlayers[v] = true;
+            end
+        end
+    end
+    
+    local function AddPlayer(Player)
+        if dropdownPlayers[Player] == nil then
+            dropdown:add_value(Player.Name);
+            dropdown:select(_G.Whitelisted);
+            dropdownPlayers[Player] = true;
+        end
+    end
+    
+    local function RemovePlayer(Player)
+        if dropdownPlayers[Player] ~= nil then
+            dropdown:remove_value(Player.Name);
+            dropdownPlayers[Player] = nil;
+        end
+    end
+    
+    updateDropdown();
+    
+    game.Players.PlayerAdded:Connect(AddPlayer);
+    game.Players.PlayerRemoving:Connect(RemovePlayer);
+    
+    local UtilityProperties = {};
+    UtilityProperties.text = 'Utility';
+    UtilityProperties.size = 5;
+    
+    local UtilitySection = tab:section(UtilityProperties)
+
+    -- toggle
+    local properties = {
+        default = true, text = 'Auto Pickup', order = 1, enabled = true, flag = 'autopickup',
+        callback = function(State) APSettings.ON = State end}
+
+    local toggle = UtilitySection:toggle(properties)
+
+    local keybindproperties = {
+        default = 'NONE',
+        mode = 'toggle',
+        text = 'Auto Pickup Trinkets',
+        order = 1,
+        enabled = true,
+        flag = 'apkeybind',
+        indicator = toggle,
+        callback = function(State, Key) toggle:set_state(State) APSettings.ON = State end
+    }
+    toggle:keybind(keybindproperties)
+     
+     task.spawn(function()
+     while true do
+        --library:save_config(library.flags.configs_selected)
+        task.wait(4)
+     end
+    end)
+
+ -- BUILD A BOAT ROGUE LINEAGE AUTOFARM SCRIPT
+
+--//Services
+local TweenService = game:GetService'TweenService';
+local RunService = game:GetService'RunService';
+local UIS = game:GetService'UserInputService';
+local VIM = game:GetService'VirtualInputManager';
+
+--//Variables
+local Player = game.Players.LocalPlayer;
+local Character = Player.Character;
+local HRP = Character.HumanoidRootPart;
+
+function Tween(Pos)
+    Pos = CFrame.new(unpack(Pos));
+    local Speed = 170
+    local Time = (HRP.Position - Pos.Position).Magnitude / Speed;
+    local Tweening = false;
+    local Parts = {};
+
+    local TweenPos = TweenService:Create(HRP, TweenInfo.new(Time, Enum.EasingStyle.Linear), {CFrame = Pos});
+    TweenPos:Play();
+    Tweening = true;
+
+    local Connection;
+
+    Connection = RunService.RenderStepped:Connect(function()
+        for _, V in pairs(Character:GetDescendants()) do
+            if V:IsA'BasePart' and V.CanCollide == true and Parts[V.Name] == nil then
+                Parts[V.Name] = V;
+            end
+            if V:IsA'BasePart' then
+                V.Velocity = Vector3.new(0, 0, 0);
+                V.CanCollide = false;
+            end
+        end
+        if Tweening == false then
+            for _, V in pairs(Parts) do
+                V.CanCollide = true;
+            end
+            Connection:Disconnect();
+        end
+
+        if Character == nil then
+            Connection:Disconnect()
+        end
+    end)
+
+    TweenPos.Completed:Wait();
+    Tweening = false;
+
+end
+
+for _, v in pairs(workspace:GetDescendants()) do
+    if (v:IsA'TouchTransmitter' or v:IsA'TouchInterest') and v.Parent.Name == 'Lava' then
+        v:Destroy();
+    end
+end
+
+function Farm()
+    Tween({5014.7021484375, 565.4501342773438, 258.9908447265625});
+    if AFSettings.ON == false then return end
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5052.55224609375, 565.4501342773438, 258.14154052734375});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5084.07666015625, 565.4501342773438, 258.5579528808594});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5083.38720703125, 565.4501342773438, 284.8612365722656});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5050.5986328125, 565.4501342773438, 285.89404296875});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5014.8154296875, 566.3115844726562, 285.4586181640625});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({4984.703125, 565.4501342773438, 290.0400085449219});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5083.58203125, 565.4501342773438, 312.7926330566406});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5052.01708984375, 565.4501342773438, 312.5138854980469});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5015.74609375, 565.4501342773438, 312.34539794921875});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5085.212890625, 565.4501342773438, 339.3542785644531});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5051.48291015625, 565.4501342773438, 341.3502136230469});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({5019.572265625, 565.4501342773438, 340.1280822753906});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({4985.49853515625, 565.4501342773438, 327.4250793457031});
+    task.wait(1.3);
+    if AFSettings.ON == false then return end
+    Tween({4424.92236328125, 566.9501342773438, 452.16510009765625});
+    task.wait(17);
+    if AFSettings.ON == false then return end
+    
+end
+
+ -- toggle
+ local properties = {
+    default = true, text = 'Autofarm', order = 1, enabled = true, flag = 'autofarm',
+    callback = function(State) AFSettings.ON = State
+    
+    if State then
+        while AFSettings.ON and Player.Character do
+            Farm();
+        end
+    end
+    
+    end}
+    
+local toggle = UtilitySection:toggle(properties)
+
+-- toggle
+local properties = {
+    default = true, text = 'No Killbricks', order = 1, enabled = true, flag = 'nokb',
+    callback = function(State) NoKBSettings.ON = State
+    
+    end}
+    
+local toggle = UtilitySection:toggle(properties)
+
+for _, v in pairs(workspace:GetDescendants()) do
+    if v.Name == 'Lava' and (v:FindFirstChildOfClass('TouchTransmitter') or v:FindFirstChildOfClass('TouchInterest')) then
+
+        local Touch = (v:FindFirstChildOfClass('TouchTransmitter') or v:FindFirstChildOfClass('TouchInterest'));
+        
+        if Touch then
+            Touch:Destroy();
+        end
+        
+        local NewCon;
+
+        NewCon = v.Parent.Touched:Connect(function(Hit)
+            if Hit:IsDescendantOf(Player.Character) and NoKBSettings.ON == true then
+                Player.Character.Humanoid.Health = 0;
+            end
+        end)
+        
+        table.insert(_G.Connections, NewCon);
+        
+    end;
+end
+
+menu:refresh()
+
+-- Autopick up setup
+    --//Services
+local TweenService = game:GetService'TweenService';
+local RunService = game:GetService'RunService';
+local UIS = game:GetService'UserInputService';
+local VIM = game:GetService'VirtualInputManager';
+
+--//Functions
+function Notify(Text)
+    local Function = Instance.new("BindableFunction")
+Function.OnInvoke = CallBack
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+Title = Text,
+Text = "",
+Icon = "",
+Duration = 3,
+Callback = Function;
+})
+end
+
+Notify('SCRIPT LOADED')
+
+task.spawn(function()
+--//Variables
+local Player = game.Players.LocalPlayer;
+local Character = Player.Character or Player.CharacterAdded:Wait();
+local HRP = Character.HumanoidRootPart;
+
+--//Settings
+local AutoPickup = true;
+local TOGGLE_KEY = Enum.KeyCode.X;
+local Pickups = 0;
+local PICKUP_CD = 1;
+
+--//Cooldowns
+local lastPick = tick();
+
+local TrinketFolder = workspace.Trinkets;
+
+local Con;
+
+Con = RunService.RenderStepped:Connect(function()
+
+    Character = Player.Character;
+    if Character == nil then return end
+    HRP = Character:FindFirstChild'HumanoidRootPart';
+    if HRP == nil then return end
+
+    if APSettings.ON and #workspace.Trinkets:GetChildren() > 0 then
+
+for _, Trinket in pairs(workspace.Trinkets:GetChildren()) do
+    if Trinket:FindFirstChild'ClickPart' then
+    local Distance = (HRP.Position - Trinket.ClickPart.Position).Magnitude;
+
+    if Distance < Trinket.ClickPart:FindFirstChildOfClass'ClickDetector'.MaxActivationDistance and tick() - lastPick > PICKUP_CD then
+        fireclickdetector(Trinket.ClickPart:FindFirstChildOfClass'ClickDetector');
+
+        Pickups += 1;
+        if Pickups >= 10 then
+        lastPick = tick();
+        Pickups = 0;
+        end
+    end
+end
+end
+
+end
+
+task.wait();
+end)
+
+table.insert(_G.Connections, Con);
+
+for _, Child in pairs(workspace.Trinkets:GetChildren()) do
+    for _, V in pairs(Child:GetChildren()) do
+        if V:FindFirstChild'ClickDetector' then
+            if V:FindFirstChild'ClickDetector'.MaxActivationDistance > 0 then
+                V.Name = 'ClickPart';
+            end
+        end
+    end
+end
+
+workspace.Trinkets.ChildAdded:Connect(function(Child)
+    task.wait(0.47);
+    for _, V in pairs(Child:GetChildren()) do
+        if V:FindFirstChild'ClickDetector' then
+            if V:FindFirstChild'ClickDetector'.MaxActivationDistance > 0 then
+                V.Name = 'ClickPart';
+            end
+        end
+    end
+    
+end)
+
+end)
+
+--//Variables
+local Player = game.Players.LocalPlayer;
+local Char = Player.Character;
+
+function Init(Character)
+
+-- Sprint
+
+Character:WaitForChild'Boosts';
+
+Character:WaitForChild'Boosts':ClearAllChildren();
+
+local Buff = Instance.new('NumberValue');
+Buff.Name = 'SpeedBoost';
+if WSSettings.ON then
+    Buff.Value = WSSettings.SpeedBoost;
+end
+Buff:SetAttribute('Speed', true)
+Buff.Parent = Character:WaitForChild'Boosts';
+
+local HRP = Character:WaitForChild'HumanoidRootPart';
+local Mana = Character:WaitForChild'Mana';
+
+local ChargeClone = HRP.Charging:Clone();
+ChargeClone.Name = 'ChargingClone';
+ChargeClone.Parent = HRP;
+
+-- Mana sound handler
+local OldValue = 0;
+
+local ManaCon;
+
+ManaCon =Mana:GetPropertyChangedSignal'Value':Connect(function()
+
+    -- Play sound
+    if Mana.Value > OldValue then
+
+        if not ChargeClone.IsPlaying then
+            ChargeClone:Play();
+        end
+        if HRP.Charging.IsPlaying then
+            HRP.Charging:Stop();
+        end
+
+        
+        
+        print'Playing';
+
+    -- Stop sound
+    else
+
+        if ChargeClone.IsPlaying then
+            ChargeClone:Stop();
+        end
+        
+    end
+
+    OldValue = Mana.Value;
+end)
+
+local ValueCon;
+
+ValueCon = Character.ChildAdded:Connect(function(Child)
+    task.wait();
+    if Child.Name == 'NoSprint' then
+        Child:Destroy();
+    end
+    if Child.Name == 'Charge' then
+        Child:Destroy();
+    end
+end)
+
+end
+
+Init(Char);
+
+local CharAddCon;
+
+CharAddCon = Player.CharacterAdded:Connect(function(Character)
+    Init(Character)
+end)
+
+table.insert(_G.Connections, ManaCon);
+table.insert(_G.Connections, ValueCon);
+table.insert(_G.Connections, CharAddCon);
+
+Notify('SCRIPT LOADED')
