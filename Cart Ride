@@ -456,7 +456,7 @@ function ManaFly()
     function KeyHandler(actionName, userInputState)
         if true and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             if actionName == "Toggle" and userInputState == Enum.UserInputState.Begin then
-                if FlySettings.FlyToggle then
+                if FlySettings.FlyToggle == true then
                     LastPos = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
                     game.Players.LocalPlayer.Character.HumanoidRootPart.Anchored = false
                     --game.Players.LocalPlayer.Character.Humanoid.PlatformStand = true
@@ -554,12 +554,12 @@ function ManaFly()
             
             table.insert(PartIgnore, Part);
     
-            while game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild'HumanoidRootPart' do
+            while game.Players.LocalPlayer.Character do
                 -- if tick() - Start > 1 and not IsInZone(player.Character.HumanoidRootPart, Part, true) and not IsInZone({Position = camera.CFrame.p}, Part, true) then
                     -- break;
                 -- end
                 
-                if stop == true then break end
+                if FlySettings.FlyToggle == false then break end
     
                 Part.CanCollide = false;
                 -- if not gay then Part.Transparency = 0.75; end
@@ -576,13 +576,18 @@ function ManaFly()
     end
          
     RunService.RenderStepped:Connect(function()
-        if FlySettings.FlyToggle and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")  then
+        if FlySettings.FlyToggle == true and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")  then
             for i,v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
                 if v:IsA("BasePart") then
                     v.Velocity = Vector3.new(0,0,0)
                 end
             end
             Screen.Enabled = true
+            local start = game.Players.LocalPlayer:GetMouse().Hit.p;
+                local dir = (start - game.Workspace.CurrentCamera.CFrame.p);
+                local ray = Ray.new(game.Players.LocalPlayer.Character.HumanoidRootPart.Position, dir.unit * 50);
+                local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, {game.Players.LocalPlayer.Character, camera, unpack(PartIgnore)});
+                    spawn(function() DisableClip(hit); end);
             local RootPart = game.Players.LocalPlayer.Character.HumanoidRootPart
             if LastPos then
                 Distance.Text = math.floor((LastPos-RootPart.Position).Magnitude+.5)
@@ -591,16 +596,10 @@ function ManaFly()
                 else
                     Distance.TextColor3 = Color3.new(1,1,1)	
                 end
-                local start = game.Players.LocalPlayer:GetMouse().Hit.p;
-                local dir = (start - game.Workspace.CurrentCamera.CFrame.p);
-                local ray = Ray.new(game.Players.LocalPlayer.Character.HumanoidRootPart.Position, dir.unit * 50);
-                local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, {game.Players.LocalPlayer.Character, camera, unpack(PartIgnore)});
-                    spawn(function() DisableClip(hit); end);
                     stop = false
             else
                 Distance.TextColor3 = Color3.new(1,1,1)
                 Distance.Text = 0
-           stop = true
             end
             InterpolatedDir = InterpolatedDir:Lerp((Direction * (Sprinting and FlySettings.SprintSpeed or FlySettings.FlySpeed)),.2)
             InterpolatedTilt = Lerp(InterpolatedTilt ,Tilt* (Sprinting and 2 or 1),Tilt == 0 and .2 or .1)
@@ -609,7 +608,6 @@ function ManaFly()
             Distance.TextColor3 = Color3.new(1,1,1)
             Distance.Text = 0
             Screen.Enabled = false
-            stop = true
         end
     end)
 end
@@ -671,7 +669,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Polar
      local toggle = section:toggle(properties)
      
      local sliderproperties = {
-        default = 0.5, min = 0, max = 70, increment = 0.1, flag = 'wsboostslider', text = 'Boost', order = 1, enabled = true, 
+        default = 0.5, min = 0, max = 40, increment = 0.1, flag = 'wsboostslider', text = 'Boost', order = 1, enabled = true, 
         callback = function(number) WSSettings.SpeedBoost = number
                 for _, v in pairs(Player.Character:WaitForChild'Boosts':GetChildren()) do
                     if v.Name == 'SpeedBoost' and v:GetAttribute'Speed' then
@@ -690,11 +688,14 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Polar
     local properties = {
         default = true, text = 'Nofall', order = 1, enabled = true, flag = 'nofall',
         callback = function(State) if State == true then
-             Player.Character.CharacterHandler.Remotes.ApplyFallDamage.Name = 'No'
+            local Remote = Player.Character.CharacterHandler.Remotes:FindFirstChild'No' or Player.Character.CharacterHandler.Remotes:FindFirstChild'ApplyFallDamage';
+             Remote.Name = 'No'
              else
                 local Remote = Player.Character.CharacterHandler.Remotes:FindFirstChild'No' or Player.Character.CharacterHandler.Remotes:FindFirstChild'ApplyFallDamage';
                 Remote.Name = 'ApplyFallDamage'
              end
+             
+             NFSettings.ON = State;
         end}
 
     local toggle = section:toggle(properties)
@@ -952,7 +953,7 @@ end
 menu:refresh()
 
 -- Autopick up setup
-    --//Services
+--//Services
 local TweenService = game:GetService'TweenService';
 local RunService = game:GetService'RunService';
 local UIS = game:GetService'UserInputService';
@@ -971,8 +972,6 @@ Duration = 3,
 Callback = Function;
 })
 end
-
-Notify('SCRIPT LOADED')
 
 task.spawn(function()
 --//Variables
@@ -1072,6 +1071,12 @@ Buff.Parent = Character:WaitForChild'Boosts';
 local HRP = Character:WaitForChild'HumanoidRootPart';
 local Mana = Character:WaitForChild'Mana';
 
+local Remote = Character:WaitForChild'CharacterHandler':WaitForChild'Remotes':WaitForChild'ApplyFallDamage';
+
+if NFSettings.ON == true then
+Remote.Name = 'No'
+end
+
 local ChargeClone = HRP.Charging:Clone();
 ChargeClone.Name = 'ChargingClone';
 ChargeClone.Parent = HRP;
@@ -1081,7 +1086,7 @@ local OldValue = 0;
 
 local ManaCon;
 
-ManaCon =Mana:GetPropertyChangedSignal'Value':Connect(function()
+ManaCon = Mana:GetPropertyChangedSignal'Value':Connect(function()
 
     -- Play sound
     if Mana.Value > OldValue then
