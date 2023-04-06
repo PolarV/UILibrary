@@ -12,6 +12,11 @@ WSSettings = {};
 WSSettings.ON = false;
 WSSettings.SpeedBoost = 0.5;
 
+-- Climb Speed Boost
+local ClimbSettings = {};
+ClimbSettings.ON = false;
+ClimbSettings.Boost = 0;
+
 -- Nofall
 local NFSettings = {};
 NFSettings.ON = false;
@@ -684,6 +689,37 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Polar
 
      toggle:slider(sliderproperties)
 
+     -- toggle
+     local properties = {default = false, flag = 'climbboost', text = 'Climb Speed Boost', order = 3, enabled = true, 
+     callback = function(State) ClimbSettings.ON = State
+        for _, v in pairs(Player.Character:WaitForChild'Boosts':GetChildren()) do
+            if v.Name == 'ClimbBoost' and v:GetAttribute'Speed' then
+                if State then
+                    v.Value = ClimbSettings.Boost;
+                else
+                    v.Value = 0;
+                end
+            end
+    end
+    end}
+     local toggle = section:toggle(properties)
+     
+     local sliderproperties = {
+        default = 0.5, min = 0, max = 1, increment = 0.05, flag = 'climbboostslider', text = 'Boost', order = 1, enabled = true, 
+        callback = function(number) ClimbSettings.Boost = number
+                for _, v in pairs(Player.Character:WaitForChild'Boosts':GetChildren()) do
+                    if v.Name == 'ClimbBoost' and v:GetAttribute'Climb' then
+                        if ClimbSettings.ON then
+                            v.Value = ClimbSettings.Boost;
+                        else
+                            v.Value = 0;
+                        end
+                    end
+                end
+        end}
+
+     toggle:slider(sliderproperties)
+
       -- toggle
     local properties = {
         default = true, text = 'Nofall', order = 1, enabled = true, flag = 'nofall',
@@ -1060,12 +1096,22 @@ Character:WaitForChild'Boosts';
 
 Character:WaitForChild'Boosts':ClearAllChildren();
 
+-- WS Buff
 local Buff = Instance.new('NumberValue');
 Buff.Name = 'SpeedBoost';
 if WSSettings.ON then
     Buff.Value = WSSettings.SpeedBoost;
 end
 Buff:SetAttribute('Speed', true)
+Buff.Parent = Character:WaitForChild'Boosts';
+
+-- Climb Speed Buuf
+local Buff = Instance.new('NumberValue');
+Buff.Name = 'ClimbBoost';
+if ClimbSettings.ON then
+    Buff.Value = ClimbSettings.Boost;
+end
+Buff:SetAttribute('Climb', true)
 Buff.Parent = Character:WaitForChild'Boosts';
 
 local HRP = Character:WaitForChild'HumanoidRootPart';
