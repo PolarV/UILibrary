@@ -33,6 +33,10 @@ AFSettings.ON = false;
 local NoKBSettings = {};
 NoKBSettings.ON = false;
 
+-- PD ESP
+local PDSettings = {};
+PDSettings.ON = false;
+
 --//Services
 local HttpService = game:GetService'HttpService';
 
@@ -50,6 +54,14 @@ for _, v in pairs(_G.Instances) do
         v:Destroy();
     end
 end
+end
+
+if _G.ESPStorage ~= nil then
+    for _, v in pairs(_G.ESPStorage) do
+        if v.Text then
+            v.Text:Remove();
+        end
+    end
 end
 
 _G.Whitelisted = {}
@@ -951,6 +963,89 @@ end
         end
     end
     
+    end}
+    
+local toggle = UtilitySection:toggle(properties)
+
+_G.ESPStorage = {};
+
+function GetIndex(Table, Instance)
+    for i,v in pairs(Table) do
+        if v == Instance then
+            return i
+        end
+    end
+
+    return -1
+end
+
+function ESP(State)
+
+    if State == nil then -- Init
+        for _, V in pairs(workspace.Trinkets:GetChildren()) do
+            if V:FindFirstChild'Attachment' and V.Attachment:FindFirstChild'ParticleEmitter' and V.Attachment:FindFirstChild'ParticleEmitter'.Texture == 'rbxassetid://1536547385' then else continue end
+            local Text = Drawing.new('Text');
+            Text.Visible = false;
+            Text.Center = true;
+            Text.Outline = true;
+            Text.Font = 2;
+            Text.Size = 13;
+            Text.Color = Color3.fromRGB(255, 170, 0);
+            Text.Text = 'PD';
+            
+            local TextTable = {};
+            TextTable.Text = Text;
+            TextTable.Instance = V;
+            
+            table.insert(_G.ESPStorage, TextTable);
+        end
+    end
+end
+
+ESP();
+
+workspace.Trinkets.ChildAdded:Connect(function(Child)
+    task.wait();
+    if Child:FindFirstChild'Attachment' and Child.Attachment:FindFirstChild'ParticleEmitter' and Child.Attachment:FindFirstChild'ParticleEmitter'.Texture == 'rbxassetid://1536547385' then else return end
+    local Text = Drawing.new('Text');
+    Text.Visible = false;
+    Text.Center = true;
+    Text.Outline = true;
+    Text.Font = 2;
+    Text.Size = 13;
+    Text.Color = Color3.fromRGB(255, 255, 255);
+    Text.Text = 'PD';
+    
+    local TextTable = {};
+    TextTable.Text = Text;
+    TextTable.Instance = Child;
+    
+    table.insert(_G.ESPStorage, TextTable);
+end)
+
+local Con;
+
+Con = RunService.RenderStepped:Connect(function()
+    for i,v in pairs(_G.ESPStorage) do
+        if v.Instance == nil or v.Instance and v.Instance.Parent ~= workspace.Trinkets then table.remove(_G.ESPStorage, GetIndex(_G.ESPStorage, v)); v.Text:Remove() print'worked'; continue end
+
+        local Vector, OnScreen = Camera:WorldToViewportPoint(v.Instance.Position);
+
+        if OnScreen and PDSettings.ON then
+            v.Text.Position = Vector2.new(Vector.X, Vector.Y);
+            v.Text.Visible = true;
+        else
+            v.Text.Visible = false;
+        end
+    end
+end)
+
+table.insert(_G.Connections, Con);
+
+ -- toggle
+ local properties = {
+    default = true, text = 'PD ESP', order = 1, enabled = true, flag = 'pdesp',
+    callback = function(State) PDSettings.ON = State;
     end}
     
 local toggle = UtilitySection:toggle(properties)
