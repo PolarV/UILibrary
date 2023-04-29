@@ -126,7 +126,7 @@ end)
 
 table.insert(_G.Connections, Con);
 
-loadstring(game:HttpGet('https://raw.githubusercontent.com/PolarV/ESP/main/ESP'))()
+local ESPConfig = loadstring(game:HttpGet('https://raw.githubusercontent.com/PolarV/ESP/main/NewESP'))()
 
 --//Services
 local TweenService = game:GetService'TweenService';
@@ -1023,6 +1023,47 @@ workspace.Trinkets.ChildAdded:Connect(function(Child)
     table.insert(_G.ESPStorage, TextTable);
 end)
 
+local Locations = {
+    ['Tundra 1'] = CFrame.new(3835.78125, 580.2937622070312, -0.8149259090423584);
+    ['Tundra 2'] = CFrame.new(3950.283935546875, 563.2937622070312, -499.954833984375);
+    ['Tundra 3'] = CFrame.new(4790.2666015625, 581.7935791015625, -1142.822265625);
+    ['Tundra 4'] = CFrame.new(6593.7705078125, 544.2938842773438, -982.3457641601562);
+    ['Tundra 5'] = CFrame.new(5952.78125, 1320.2935791015625, 124.19148254394531);
+    ['Tundra 6'] = CFrame.new(5511.28271484375, 1067.2935791015625, 920.66943359375);
+    ['Tundra 7'] = CFrame.new(4761.5849609375, 689.293701171875, 1668.2264404296875);
+    ['Tundra 8'] = CFrame.new(6433.67333984375, 1334.68408203125, 1365.575927734375);
+    ['sigil'] = CFrame.new(6584.1875, 1320.49365234375, 462.1789855957031);
+    ['snail'] = CFrame.new(5789.11865234375, 1113.2935791015625, 866.6686401367188);
+    ['wilds'] = CFrame.new(551.941162109375, 178.5999298095703, -1056.1995849609375);
+    ['forest 1'] = CFrame.new(1726.5, 158.9999542236328, 683);
+    ['forest 2'] = CFrame.new(2509.8662109375, 211.95587158203125, -446.4986572265625);
+    ['forest 3'] = CFrame.new(2572.729248046875, 309.0349426269531, 209.04600524902344);
+    ['forest 4'] = CFrame.new(2288.998046875, 148.9999542236328, 946.0435791015625);
+    ['forest 5'] = CFrame.new(1789.98876953125, 118.2874755859375, -576.8230590820312);
+    ['desert 1'] = CFrame.new(-2064.62109375, 717.9136962890625, -219.29959106445312);
+    ['desert 2'] = CFrame.new(-1148.551513671875, 328.0904541015625, 728.79345703125);
+    ['desert 3'] = CFrame.new(-1821.523193359375, 303.0936279296875, 641.0115356445312);
+    ['desert 4'] = CFrame.new(-432.9499206542969, 231.09373474121094, 198.33346557617188);
+    ['desert 5'] = CFrame.new(-2002.2056884765625, 674.5927734375, -690.4190063476562);
+    ['shore'] = CFrame.new(1233.912841796875, 272.65106201171875, 1667.316162109375);
+};
+
+function GetPosition(Object)
+    local Pos = CFrame.new(0, 0, 0);
+    local Last = math.huge;
+    
+    for i,v in next, Locations do
+        local Magnitude = (Object.Position - v.Position).Magnitude;
+
+        if Magnitude < Last then
+            Pos = i;
+            Last = Magnitude;
+        end
+    end
+
+    return Pos;
+end
+
 local Con;
 
 Con = RunService.RenderStepped:Connect(function()
@@ -1034,6 +1075,7 @@ Con = RunService.RenderStepped:Connect(function()
         if OnScreen and PDSettings.ON then
             v.Text.Position = Vector2.new(Vector.X, Vector.Y);
             v.Text.Visible = true;
+            v.Text.Text = 'PD [' .. tostring(GetPosition(v.Instance)) .. ']';
         else
             v.Text.Visible = false;
         end
